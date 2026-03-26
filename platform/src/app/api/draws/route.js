@@ -7,7 +7,11 @@ const adminSupabase = createSupabaseClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
-const resend = new Resend(process.env.RESEND_API_KEY)
+let resend = null
+
+if (process.env.RESEND_API_KEY) {
+  resend = new Resend(process.env.RESEND_API_KEY)
+}
 
 // GET /api/draws
 export async function GET() {
@@ -136,35 +140,34 @@ async function matchAndCreateWinners(draw, winningNumbers, prizes) {
 
 async function sendWinnerEmail(email, tier, amount) {
   if (!process.env.RESEND_API_KEY) return
-  const tierLabel = { tier5: '5-Number Jackpot', tier4: '4-Number Match', tier3: '3-Number Match' }[tier]
+
+  const { Resend } = await import('resend')
+  const resend = new Resend(process.env.RESEND_API_KEY)
+
+  const tierLabel = {
+    tier5: '5-Number Jackpot',
+    tier4: '4-Number Match',
+    tier3: '3-Number Match'
+  }[tier]
+
   try {
     await resend.emails.send({
       from: 'GolfImpact <noreply@golfimpact.com>',
       to: email,
       subject: `🏆 You Won! — £${amount} ${tierLabel}`,
-      html: `
-        <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0B0E14;color:#F8FAFC;padding:40px;border-radius:24px;">
-          <h1 style="color:#3B82F6;margin-bottom:8px;">Congratulations!</h1>
-          <p style="color:#94A3B8;font-size:18px;">You matched a <strong style="color:#F8FAFC;">${tierLabel}</strong> in this month's GolfImpact draw.</p>
-          <div style="background:#1E293B;border-radius:16px;padding:24px;margin:24px 0;text-align:center;">
-            <p style="margin:0;color:#94A3B8;font-size:14px;">Your prize</p>
-            <h2 style="margin:8px 0 0;font-size:48px;color:#3B82F6;">£${amount}</h2>
-          </div>
-          <p style="color:#94A3B8;">Log in to your dashboard and upload your score proof to claim your prize.</p>
-          <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/upload-proof" 
-             style="display:inline-block;background:#3B82F6;color:white;padding:14px 28px;border-radius:50px;font-weight:bold;text-decoration:none;margin-top:16px;">
-            Claim My Prize
-          </a>
-        </div>
-      `,
+      html: `...`
     })
   } catch (err) {
-    console.error(`[Email] Failed to send winner email to ${email}:`, err.message)
+    console.error(`[Email] Failed:`, err.message)
   }
 }
 
 async function sendDrawResultEmails(winningNumbers, prizes, jackpotRolled) {
   if (!process.env.RESEND_API_KEY) return
+
+  const { Resend } = await import('resend')
+  const resend = new Resend(process.env.RESEND_API_KEY)
+
   const { data: users } = await adminSupabase
     .from('users')
     .select('email')
@@ -172,34 +175,14 @@ async function sendDrawResultEmails(winningNumbers, prizes, jackpotRolled) {
 
   if (!users?.length) return
 
-  const numbersDisplay = winningNumbers.join(' · ')
-  const subject = jackpotRolled
-    ? `This month's draw results — Jackpot rolls over!`
-    : `This month's draw results are in!`
-
-  // Send in batch (Resend allows batch via array)
   try {
     await resend.emails.send({
       from: 'GolfImpact <noreply@golfimpact.com>',
       to: users.map(u => u.email),
-      subject,
-      html: `
-        <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0B0E14;color:#F8FAFC;padding:40px;border-radius:24px;">
-          <h1 style="color:#3B82F6;">Monthly Draw Results</h1>
-          <p style="color:#94A3B8;">This month's winning numbers were:</p>
-          <div style="display:flex;gap:12px;margin:20px 0;flex-wrap:wrap;">
-            ${winningNumbers.map(n => `<span style="background:#1E3A5F;color:#60A5FA;padding:12px 18px;border-radius:12px;font-size:24px;font-weight:bold;">${n}</span>`).join('')}
-          </div>
-          ${jackpotRolled ? '<p style="color:#F59E0B;font-weight:bold;">No 5-match winner — the jackpot rolls over to next month!</p>' : ''}
-          <p style="color:#94A3B8;">Log in to your dashboard to see if you won.</p>
-          <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard"
-             style="display:inline-block;background:#3B82F6;color:white;padding:14px 28px;border-radius:50px;font-weight:bold;text-decoration:none;margin-top:16px;">
-            View My Dashboard
-          </a>
-        </div>
-      `,
+      subject: 'Draw Results',
+      html: `...`
     })
   } catch (err) {
-    console.error('[Email] Failed to send draw result emails:', err.message)
+    console.error('[Email] Failed:', err.message)
   }
 }
