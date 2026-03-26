@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0B0E14;
+  --foreground: #F8FAFC;
+  --card-bg: rgba(30, 41, 59, 0.5);
+  --accent-primary: #3B82F6;
+  --accent-secondary: #F43F5E;
+  --text-muted: #94A3B8;
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-card: var(--card-bg);
+  --color-muted: var(--text-muted);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  @apply font-bold tracking-tight;
+}
+
+.glass {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.hero-gradient {
+  background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent),
+              radial-gradient(circle at bottom left, rgba(244, 63, 94, 0.1), transparent);
+}
+
+.btn-primary {
+  @apply px-8 py-4 bg-accent-primary text-white rounded-full font-semibold transition-all duration-300 hover:scale-105 hover:bg-blue-600 active:scale-95 shadow-lg shadow-blue-500/20;
+}
+
+.btn-secondary {
+  @apply px-8 py-4 bg-transparent border border-gray-700 hover:border-gray-500 rounded-full font-semibold transition-all duration-300 active:scale-95;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
