@@ -1,17 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import { Resend } from 'resend'
 import { weightedDraw, generateRandomDraw, calculatePrizePool } from '@/utils/drawEngine'
 
 const adminSupabase = createSupabaseClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
-let resend = null
 
-if (process.env.RESEND_API_KEY) {
-  resend = new Resend(process.env.RESEND_API_KEY)
-}
 
 // GET /api/draws
 export async function GET() {
