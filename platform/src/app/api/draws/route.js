@@ -134,11 +134,16 @@ async function matchAndCreateWinners(draw, winningNumbers, prizes) {
   return { tier5Winners, tier4Winners, tier3Winners }
 }
 
-async function sendWinnerEmail(email, tier, amount) {
-  if (!process.env.RESEND_API_KEY) return
-
+async function getResend() {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey || apiKey === 're_your_api_key_here' || !apiKey.startsWith('re_')) return null
   const { Resend } = await import('resend')
-  const resend = new Resend(process.env.RESEND_API_KEY)
+  return new Resend(apiKey)
+}
+
+async function sendWinnerEmail(email, tier, amount) {
+  const resend = await getResend()
+  if (!resend) return
 
   const tierLabel = {
     tier5: '5-Number Jackpot',
@@ -151,18 +156,26 @@ async function sendWinnerEmail(email, tier, amount) {
       from: 'GolfImpact <noreply@golfimpact.com>',
       to: email,
       subject: `🏆 You Won! — £${amount} ${tierLabel}`,
-      html: `...`
+      html: `
+        <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0B0E14;color:#F8FAFC;padding:40px;border-radius:24px;">
+          <h1 style="color:#3B82F6;">Congratulations!</h1>
+          <p style="font-size:18px;">You matched ${tierLabel.split('-')[0]} numbers in our charity draw!</p>
+          <div style="background:#1E293B;padding:20px;border-radius:16px;margin:24px 0;text-align:center;">
+            <p style="margin:0;color:#94A3B8;text-transform:uppercase;font-size:12px;letter-spacing:1px;">Your Prize</p>
+            <h2 style="margin:8px 0;font-size:32px;color:#22C55E;">£${amount}</h2>
+          </div>
+          <p style="color:#94A3B8;line-height:1.6;">Our team will process your payment within 48 hours. Keep playing to support your chosen charity!</p>
+        </div>
+      `
     })
   } catch (err) {
-    console.error(`[Email] Failed:`, err.message)
+    console.error(`[Email] Winner notification failed:`, err.message)
   }
 }
 
 async function sendDrawResultEmails(winningNumbers, prizes, jackpotRolled) {
-  if (!process.env.RESEND_API_KEY) return
-
-  const { Resend } = await import('resend')
-  const resend = new Resend(process.env.RESEND_API_KEY)
+  const resend = await getResend()
+  if (!resend) return
 
   const { data: users } = await adminSupabase
     .from('users')
@@ -175,10 +188,28 @@ async function sendDrawResultEmails(winningNumbers, prizes, jackpotRolled) {
     await resend.emails.send({
       from: 'GolfImpact <noreply@golfimpact.com>',
       to: users.map(u => u.email),
-      subject: 'Draw Results',
-      html: `...`
+      subject: 'GolfImpact Monthly Draw Results is OUT! 🏌️',
+      html: `
+        <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0B0E14;color:#F8FAFC;padding:40px;border-radius:24px;">
+          <h1 style="color:#3B82F6;">Monthly Draw Results</h1>
+          <div style="display:flex;gap:12px;justify-content:center;margin:32px 0;">
+            ${winningNumbers.map(n => `
+              <div style="width:48px;height:48px;background:#3B82F6;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:20px;">
+                ${n}
+              </div>
+            `).join('')}
+          </div>
+          <p style="color:#94A3B8;text-align:center;">
+            ${jackpotRolled ? "No jackpot winner this month — the prize pool rolls over!" : "We have a jackpot winner!"}
+          </p>
+          <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" 
+             style="display:block;background:#3B82F6;color:white;padding:16px;text-align:center;border-radius:12px;text-decoration:none;font-weight:bold;margin-top:24px;">
+            Check My Results
+          </a>
+        </div>
+      `
     })
   } catch (err) {
-    console.error('[Email] Failed:', err.message)
+    console.error('[Email] Draw results failed:', err.message)
   }
 }
