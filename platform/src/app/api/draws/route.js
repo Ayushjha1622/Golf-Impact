@@ -3,15 +3,18 @@ export const dynamic = 'force-dynamic'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { weightedDraw, generateRandomDraw, calculatePrizePool } from '@/utils/drawEngine'
 
-const adminSupabase = createSupabaseClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
+function getAdminSupabase() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  )
+}
 
 
 // GET /api/draws
 export async function GET() {
   try {
+    const adminSupabase = getAdminSupabase()
     const { data, error } = await adminSupabase
       .from('draws')
       .select('*')
@@ -26,6 +29,7 @@ export async function GET() {
 // POST /api/draws — simulate or publish
 export async function POST(req) {
   try {
+    const adminSupabase = getAdminSupabase()
     const { mode = 'weighted', totalRevenue = 0, publish = false } = await req.json()
 
     const { data: allScores } = await adminSupabase.from('scores').select('score')
@@ -90,6 +94,7 @@ export async function POST(req) {
 }
 
 async function matchAndCreateWinners(draw, winningNumbers, prizes) {
+  const adminSupabase = getAdminSupabase()
   const { data: users } = await adminSupabase
     .from('users')
     .select('id, email, scores(score)')
@@ -177,6 +182,7 @@ async function sendDrawResultEmails(winningNumbers, prizes, jackpotRolled) {
   const resend = await getResend()
   if (!resend) return
 
+  const adminSupabase = getAdminSupabase()
   const { data: users } = await adminSupabase
     .from('users')
     .select('email')

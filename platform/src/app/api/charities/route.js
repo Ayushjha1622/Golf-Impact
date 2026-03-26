@@ -1,14 +1,18 @@
 import { NextResponse } from 'next/server'
+export const dynamic = 'force-dynamic'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
-const adminSupabase = createSupabaseClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
+function getAdminSupabase() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  )
+}
 
 // GET /api/charities — list all charities
 export async function GET() {
   try {
+    const adminSupabase = getAdminSupabase()
     const { data, error } = await adminSupabase
       .from('charities')
       .select('*')
@@ -25,6 +29,7 @@ export async function GET() {
 // POST /api/charities — create a new charity (admin)
 export async function POST(req) {
   try {
+    const adminSupabase = getAdminSupabase()
     const body = await req.json()
     const { name, description, website_url, is_featured } = body
 
@@ -49,6 +54,7 @@ export async function POST(req) {
 // PATCH /api/charities — update a charity
 export async function PATCH(req) {
   try {
+    const adminSupabase = getAdminSupabase()
     const { id, ...updates } = await req.json()
     if (!id) return NextResponse.json({ error: 'Charity ID required' }, { status: 400 })
 
